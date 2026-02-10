@@ -27,7 +27,7 @@ Centralizar e automatizar a organização de torneios, evitando o uso de planilh
 
 ## 👥 Perfis de Usuário
 - **Jogador**
-  - cadastra-se / autentica-se
+  - cadastra-se
   - escolhe um torneio (8 ou 16) para se inscrever
   - registra resultados e confirma/recusa o resultado do adversário
   - consulta chaveamento, partidas e rankings
@@ -55,13 +55,13 @@ Centralizar e automatizar a organização de torneios, evitando o uso de planilh
   - **Recusar** → abre disputa e o **Admin decide** e confirma o vencedor
 
 ### Rankings
-- **Ranking por pontuação:** baseado em vitórias/derrotas (mesma pontuação definida no projeto).
+- **Ranking por pontuação:** baseado em vitórias/derrotas.
 - **Ranking de campeões:** contabiliza quantos torneios cada jogador venceu (títulos).
 
 ---
 
 ## ✅ Principais Funcionalidades (alto nível)
-- Cadastro e autenticação de usuários (Jogador/Admin)
+- Cadastro de usuários (Jogador/Admin)
 - Inscrição em torneios (8 ou 16)
 - Fechamento automático e geração de chaveamento
 - Criação e gestão de partidas
@@ -78,11 +78,3 @@ Centralizar e automatizar a organização de torneios, evitando o uso de planilh
 ### Framework
 - **FastAPI**
   - API REST rápida e moderna
-  - documentação automática via Swagger (OpenAPI)
-  - validação de dados com Pydantic
-
----
-
-## 📦 Estrutura (sugestão inicial)
-> A estrutura pode evoluir durante a disciplina.
-
