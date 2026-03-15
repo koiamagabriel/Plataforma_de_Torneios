@@ -23,214 +23,329 @@ Centralizar e automatizar a organização de torneios, evitando o uso de planilh
 - resultados contestados sem rastreabilidade
 - ranking sem histórico confiável
 
-# FCHub – Gestão de Torneios e Gestão de Partidas
+# FCHub
 
-## Visão Geral
+Sistema web simples para gerenciamento de torneios, com foco em dois componentes principais:
 
-Este repositório contém a implementação inicial do **FCHub**, uma plataforma voltada ao gerenciamento de torneios de **EA FC**.  
-Nesta etapa do projeto, o foco está em dois componentes centrais da aplicação:
-
+- **Login de Usuário**
 - **Gestão de Torneios**
-- **Gestão de Partidas**
 
-Ambos os componentes foram projetados de forma modular, com comunicação baseada em interfaces, buscando separar responsabilidades e reduzir acoplamento direto entre as partes do sistema.
-
-Além disso, a solução considera o uso da **API/biblioteca Challonge** como apoio para operações relacionadas à organização do torneio e estruturação das partidas.
+O projeto foi desenvolvido com **FastAPI**, páginas HTML com **Jinja2**, estilização em **CSS** e persistência local em **arquivos JSON**.  
+Nesta versão, não é necessário banco de dados.
 
 ---
 
-# 1. Descrição dos dois componentes implementados
+## 1. Descrição dos dois componentes implementados
 
-## 1.1 Componente de Gestão de Torneios
+### 1.1 Componente de Login de Usuário
 
-O componente de **Gestão de Torneios** é responsável por administrar o ciclo de vida dos torneios dentro da plataforma.  
-Seu papel é controlar a disponibilidade de torneios, permitir a inscrição de jogadores e identificar o momento em que um torneio atinge sua capacidade máxima.
+O componente de **Login de Usuário** é responsável por controlar o acesso ao sistema.
 
-### Principais responsabilidades
-- Listar torneios disponíveis para inscrição
-- Realizar a inscrição de jogadores em torneios
-- Verificar disponibilidade de vagas
-- Marcar torneios como lotados quando atingirem o limite
-- Acionar integrações externas relacionadas à estrutura do torneio, quando necessário
+Suas funções principais são:
 
-Esse componente representa a porta de entrada para o jogador participar de uma competição e concentra as regras ligadas ao estado do torneio.
+- cadastrar novos usuários com **e-mail** e **senha**
+- permitir login
+- identificar automaticamente o tipo do usuário com base no domínio do e-mail
+- manter o usuário autenticado durante a navegação
 
----
+### Regras de perfil
+- e-mails terminados em `@admin.com` → usuário **administrador**
+- e-mails terminados em `@gmail.com` → usuário **padrão**
 
-## 1.2 Componente de Gestão de Partidas
+### Usuários iniciais do sistema
+O sistema já inicia com dois usuários salvos:
 
-O componente de **Gestão de Partidas** é responsável por controlar as partidas pertencentes aos torneios já formados.  
-Seu foco está no acompanhamento do andamento das partidas e na manipulação dos resultados informados pelos jogadores.
+- `user@admin.com` → administrador
+- `user@gmail.com` → usuário padrão
 
-### Principais responsabilidades
-- Consultar partidas de um jogador em determinado torneio
-- Registrar o resultado de uma partida
-- Consultar o status atual de uma partida
-- Oficializar resultados após validação
-- Consumir informações do torneio para garantir consistência entre bracket, jogadores e partidas
-
-Esse componente entra em ação após a formação do torneio, sendo responsável pela operação do fluxo competitivo.
+Senha inicial dos dois:
+- `123456`
 
 ---
 
-# 2. Interfaces fornecidas
+### 1.2 Componente de Gestão de Torneios
 
-As interfaces fornecidas representam os serviços que cada componente disponibiliza ao restante do sistema.
+O componente de **Gestão de Torneios** é responsável por controlar os torneios e as inscrições.
 
-## 2.1 Interface fornecida pelo componente Gestão de Torneios
+Suas funções principais são:
 
-### `ITorneios`
+- criar torneios com formato de **8 ou 16 jogadores**
+- listar torneios cadastrados
+- permitir que usuários se inscrevam em torneios
+- controlar o número de inscritos
+- mudar o status do torneio quando ele lota
+- gerar automaticamente as partidas da primeira rodada quando o torneio atinge o limite de jogadores
 
-Responsável por expor as operações ligadas ao gerenciamento dos torneios.
-
-#### Operações
-- `listarTorneiosDisponiveis()`
-- `inscreverEmTorneio(idJogador, idTorneio)`
-- `marcarTorneioComoLotado(idTorneio)`
-
-### Objetivo
-Permitir que outros componentes e camadas da aplicação interajam com as regras de negócio de torneios sem depender da implementação concreta.
+Além disso, o sistema já está preparado para integração com a biblioteca **Challonge**, embora o funcionamento local continue normal mesmo sem credenciais configuradas.
 
 ---
 
-## 2.2 Interface fornecida pelo componente Gestão de Partidas
+## 2. Interfaces fornecidas
 
-### `IResultadosPartida`
+Neste projeto, as interfaces fornecidas são os serviços e rotas que cada componente disponibiliza.
 
-Responsável por expor as operações ligadas à consulta, atualização e oficialização de partidas.
+### 2.1 Interfaces fornecidas pelo componente de Login de Usuário
 
-#### Operações
-- `consultarPartidasDoJogador(idJogador, idTorneio)`
-- `registrarResultadoDaPartida(idPartida, resultado)`
-- `consultarStatusDaPartida(idPartida)`
-- `oficializarResultadoDaPartida(idPartida)`
+Arquivo:
+- `app/auth_service.py`
 
-### Objetivo
-Oferecer um contrato estável para que as funcionalidades relacionadas às partidas possam ser utilizadas sem dependência direta da lógica interna do componente.
+Métodos fornecidos:
+- `register_user(email, password)`
+- `login_user(email, password)`
+- `get_user_by_email(email)`
 
----
-
-# 3. Interfaces requeridas
-
-As interfaces requeridas representam os contratos externos dos quais um componente depende para funcionar corretamente.
-
-## 3.1 Interfaces requeridas pela Gestão de Torneios
-
-### Interface externa de integração com Challonge
-O componente de torneios depende de uma interface de integração com a **API/biblioteca Challonge**, responsável por operações como criação, consulta e sincronização de informações do torneio.
-
-Exemplo conceitual:
-- `IChallongeTorneios`
-
-#### Possíveis responsabilidades dessa interface
-- Criar torneio na plataforma externa
-- Consultar dados estruturais do torneio
-- Sincronizar participantes
-- Atualizar informações do bracket quando aplicável
+Esses métodos permitem:
+- cadastrar usuário
+- validar login
+- consultar usuário salvo
 
 ---
 
-## 3.2 Interfaces requeridas pela Gestão de Partidas
+### 2.2 Interfaces fornecidas pelo componente de Gestão de Torneios
 
-### `ITorneios`
-O componente de partidas depende da interface fornecida pela Gestão de Torneios para garantir que as partidas sejam tratadas dentro do contexto correto do torneio.
+Arquivo:
+- `app/torneios_service.py`
 
-Essa dependência permite, por exemplo:
-- validar se a partida pertence ao torneio correto
-- recuperar contexto do torneio associado
-- consultar informações estruturais necessárias ao fluxo de partidas
+Métodos fornecidos:
+- `create_tournament(nome, formato, current_user)`
+- `list_tournaments()`
+- `get_tournament_by_id(tournament_id)`
+- `subscribe_user(tournament_id, current_user)`
+- `get_matches_by_tournament(tournament_id)`
 
-### Interface externa de integração com Challonge
-O componente de partidas também depende de uma interface de integração com a **API/biblioteca Challonge**, utilizada para consultar ou atualizar informações relacionadas às partidas.
-
-Exemplo conceitual:
-- `IChallongePartidas`
-
-#### Possíveis responsabilidades dessa interface
-- Consultar partidas/bracket gerados externamente
-- Obter identificadores externos de confrontos
-- Atualizar resultados no serviço externo
-- Sincronizar status das partidas
+Esses métodos permitem:
+- criar torneio
+- listar torneios
+- buscar torneio por id
+- inscrever usuário
+- visualizar partidas geradas automaticamente
 
 ---
 
-# 4. Explicação de como ocorre a comunicação entre eles
+## 3. Interfaces requeridas
 
-A comunicação entre os componentes ocorre de maneira **indireta**, por meio de **interfaces bem definidas**.
+As interfaces requeridas são os recursos de que cada componente precisa para funcionar.
 
-## Fluxo geral de comunicação
+### 3.1 Interfaces requeridas pelo componente de Login de Usuário
 
-1. O componente **Gestão de Torneios** administra o torneio e controla as inscrições.
-2. Quando o torneio atinge sua capacidade, ele pode ser marcado como lotado e preparado para a fase de partidas.
-3. O componente **Gestão de Partidas** consulta o contexto do torneio por meio da interface `ITorneios`.
-4. Com base nessas informações, o componente de partidas gerencia os confrontos e os resultados.
-5. Sempre que necessário, ambos os componentes podem utilizar seus respectivos adaptadores de integração com o Challonge.
+O componente de login depende do arquivo:
 
-## Exemplo prático de interação
+- `app/storage.py`
 
-- Um jogador se inscreve em um torneio por meio da **Gestão de Torneios**
-- O sistema valida a inscrição e atualiza o estado do torneio
-- Após a formação do torneio, a **Gestão de Partidas** consulta o torneio vinculado
-- O jogador registra o resultado de uma partida
-- O componente de partidas valida e persiste o resultado
-- Caso exista sincronização externa, o adaptador do Challonge é acionado
+Funções utilizadas:
+- `load_users()`
+- `save_users(users)`
+- `get_next_user_id()`
 
-### Resumo
-A **Gestão de Partidas não acessa diretamente a implementação interna da Gestão de Torneios**.  
-Ela utiliza apenas o contrato exposto por `ITorneios`, mantendo a comunicação controlada e previsível.
+Essas funções são responsáveis por salvar e carregar os usuários em JSON.
 
 ---
 
-# 5. Justificativa de como foi evitado o acoplamento direto
+### 3.2 Interfaces requeridas pelo componente de Gestão de Torneios
 
-O acoplamento direto foi evitado por meio de uma arquitetura baseada em **interfaces e separação de responsabilidades**.
+O componente de torneios depende dos arquivos:
 
-## Estratégias adotadas
+- `app/storage.py`
+- biblioteca `challonge` 
 
-### 5.1 Uso de contratos
-Cada componente expõe apenas aquilo que precisa ser consumido pelos demais, por meio de interfaces.  
-Isso significa que nenhum componente depende diretamente da classe concreta do outro.
-
-### 5.2 Dependência de abstrações
-O componente de **Gestão de Partidas** depende de `ITorneios`, e não da implementação concreta da Gestão de Torneios.  
-Da mesma forma, as integrações com o Challonge também podem ser tratadas por interfaces específicas, permitindo troca de implementação sem impacto nas regras de negócio.
-
-### 5.3 Separação entre regra de negócio e integração externa
-As regras centrais do domínio ficam nos componentes internos, enquanto o acesso ao Challonge fica encapsulado em adaptadores ou serviços de infraestrutura.  
-Isso impede que a lógica principal do sistema fique presa a detalhes de API, biblioteca ou fornecedor externo.
-
-### 5.4 Facilidade de manutenção e testes
-Essa abordagem facilita:
-- substituição de implementações
-- criação de mocks para testes
-- evolução isolada dos componentes
-- reaproveitamento de código
-- menor impacto de mudanças futuras
-
-## Benefício arquitetural
-Com essa estratégia, o sistema se torna mais:
-- modular
-- testável
-- extensível
-- reutilizável
-- fácil de manter
+Funções utilizadas em `storage.py`:
+- `load_tournaments()`
+- `save_tournaments(tournaments)`
+- `load_matches()`
+- `save_matches(matches)`
+- `get_next_tournament_id()`
+- `get_next_match_id()`
 
 ---
 
-# 6. Instruções para execução do projeto
+## 4. Explicação de como ocorre a comunicação entre eles
 
-> **Observação:** esta seção considera uma execução padrão de um projeto Python com FastAPI.  
-> Os nomes de arquivos e diretórios podem ser ajustados conforme a implementação final do repositório.
+A comunicação entre os componentes acontece por meio do arquivo principal:
 
-## Pré-requisitos
+- `app/main.py`
+
+O fluxo ocorre da seguinte forma:
+
+1. O usuário acessa a tela de **cadastro/login**
+2. O `main.py` chama o **AuthService**
+3. Depois do login, o usuário é salvo na sessão
+4. Ao acessar torneios, o `main.py` recupera o usuário logado
+5. O `main.py` chama o **TorneiosService**
+6. O `TorneiosService` usa os dados do usuário para:
+   - validar se ele pode criar torneio
+   - permitir inscrição
+   - gerar partidas quando o torneio enche
+
+### Resumo da comunicação
+- `main.py` faz a ponte entre as telas e os serviços
+- `auth_service.py` cuida do acesso
+- `torneios_service.py` cuida das regras dos torneios
+- `storage.py` cuida da persistência dos dados
+
+---
+
+## 5. Justificativa de como foi evitado o acoplamento direto
+
+O acoplamento direto foi evitado separando claramente as responsabilidades de cada arquivo.
+
+### Estratégias adotadas
+
+#### Separação por responsabilidade
+- `auth_service.py` cuida apenas do login e cadastro
+- `torneios_service.py` cuida apenas dos torneios
+- `storage.py` cuida apenas da persistência
+- `main.py` organiza as rotas e a navegação
+- `template/` contém apenas as páginas HTML
+- `static/` contém apenas o CSS
+
+#### Comunicação controlada
+O componente de torneios não manipula diretamente a tela, e o componente de login não controla a lógica dos torneios.  
+Tudo passa pelo `main.py`, que faz a integração entre os componentes.
+
+#### Persistência isolada
+Os dados não ficam espalhados pelo sistema.  
+Toda leitura e escrita de usuários, torneios e partidas fica centralizada em `storage.py`.
+
+### Benefícios
+Com isso, o projeto fica:
+- mais fácil de entender
+- mais fácil de testar
+- mais fácil de manter
+- mais fácil de evoluir no futuro
+
+---
+
+## 6. Instruções para execução do projeto
+
+## 6.1 Pré-requisitos
+
+Antes de executar, verifique se você possui instalado:
+
 - Python 3.10 ou superior
-- `pip`
-- Ambiente virtual recomendado
-- Acesso à API/biblioteca Challonge, se a integração externa estiver habilitada
+- pip
 
-## Passo a passo
+---
 
-### 1. Clonar o repositório
+## 6.2 Estrutura esperada do projeto
+
+A estrutura deve estar assim:
+
+```text
+fchub/
+├── app/
+   ├── static/
+   │   └── style.css
+   ├── template/
+   │   ├── auth.html
+   │   ├── menu.html
+   │   ├── torneios.html
+   │   └── criar_torneio.html
+   ├── auth_service.py
+   ├── main.py
+   ├── storage.py
+   └── torneios_service.py
+```
+
+## 6.3 Instalar dependências
+
+Abra o terminal na pasta raiz do projeto e execute:
+
 ```bash
-git clone <URL_DO_REPOSITORIO>
-cd <NOME_DO_REPOSITORIO>
+python -m pip install fastapi uvicorn jinja2 python-multipart itsdangerous pychallonge
+```
+## 6.4 Executar o projeto
+
+Ainda na pasta raiz do projeto, execute:
+```
+python -m uvicorn app.main:app --reload
+```
+Se tudo estiver correto, o terminal exibirá algo semelhante a:
+```
+Uvicorn running on http://127.0.0.1:8000
+```
+
+## 6.5 Acessar o sistema
+
+Abra o navegador e Acesse:
+```
+http://127.0.0.1:8000
+```
+## 6.6 Testar o login
+
+### Usuário administrador
+
+- E-mail: `user@admin.com`
+- Senha: `123456`
+
+### Usuário padrão
+
+- E-mail: `user@gmail.com`
+- Senha: `123456`
+
+---
+
+## 6.7 Fluxo de teste recomendado
+
+### Teste com administrador
+
+1. Fazer login com `user@admin.com`
+2. Entrar em **Criar Torneio**
+3. Criar um torneio com formato **8** ou **16**
+4. Ir para **Listar Torneios**
+5. Confirmar que o torneio aparece na listagem
+
+### Teste com usuário padrão
+
+1. Fazer login com `user@gmail.com`
+2. Ir para **Listar Torneios**
+3. Selecionar um torneio
+4. Clicar em **Participar do torneio**
+5. Verificar se a inscrição foi registrada
+
+### Teste de lotação
+
+1. Cadastrar ou usar mais usuários
+2. Inscrever até atingir o limite do torneio
+3. Verificar se o status muda
+4. Verificar se as partidas da primeira rodada aparecem automaticamente
+
+---
+
+## 6.8 Persistência dos dados
+
+Os dados são salvos localmente em arquivos JSON criados automaticamente durante a execução.
+
+Isso permite:
+
+- manter os usuários cadastrados
+- manter os torneios criados
+- manter as partidas geradas
+
+Sem necessidade de banco de dados nesta versão.
+
+---
+
+## Considerações finais
+
+Esta versão do projeto foi construída para ser simples, funcional e fácil de entender.
+
+Os dois componentes implementados — **Login de Usuário** e **Gestão de Torneios** — já permitem demonstrar o fluxo principal do sistema:
+
+- cadastro e login
+- separação entre administrador e usuário padrão
+- criação de torneios
+- inscrição em torneios
+- geração automática de partidas quando o torneio lota
+
+A arquitetura também permite futuras expansões, como:
+
+- ranking
+- controle de resultados
+- gerenciamento de partidas
+- autenticação mais segura
+- banco de dados real
+- integração completa com o Challonge
+
+
+
+
